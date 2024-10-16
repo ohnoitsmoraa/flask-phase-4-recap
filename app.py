@@ -31,6 +31,32 @@ def users():
 def user(id):
     if request.method == 'GET':
         user = User.query.get(id)
+
+        if not user:
+            return make_response({"error": "User not found"}, 404)
+        
+        return make_response(user.to_dict(), 200)
+    
+    if request.method == 'DELETE':
+        user = User.query.get(id)
+
+        if not user:
+            return make_response({"error": "User not found"}, 404)
+
+        db.session.delete(user)
+        db.session.commit()
+        return make_response({"message": "Success"}, 200)
+    
+    if request.method == 'PATCH':
+        user = User.query.get(id)
+        data = request.get_json()
+
+        if not user:
+            return make_response({"error": "User not found"}, 404)
+
+        user.username = data['username']
+        user.email = data['email']
+        db.session.commit()
         return make_response(user.to_dict(), 200)
 
 
