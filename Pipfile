@@ -10,6 +10,9 @@ Flask-SQLAlchemy = "3.0.3"
 sqlalchemy-serializer = "*"
 flask-restful = "*"
 flask-cors = "*"
+flask-jwt-extended = "*"
 
 [requires]
 python_full_version = "3.8.13"
+
+[dev-packages]

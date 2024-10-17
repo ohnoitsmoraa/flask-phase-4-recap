@@ -14,4 +14,17 @@ example: users
 GET/api/users
 POST/api/users
 
+## AUTHENTICATION & AUTHORIZATION
+- **Authentication** is  proving one's identity to an application in order to access protected information; logging in.
+
+- **Authorization** is allowing or disallowing access to resources based on a user's attributes.
+
+### JWT AUTHENTICATION
+- SETUP AUTH => install, secret key, initialkize it with our app
+
+### LOGIN
+- Create access token and refresh token
+- Protecting the API endpoints
+- Handles JWT authentication errors
+- Logout
 

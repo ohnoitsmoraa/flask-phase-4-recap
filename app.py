@@ -3,16 +3,20 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from models import *
 from flask_restful import Api, Resource
-from flask_cors import CORS
-from user import bp_user
-from post import bp_post
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+# from flask_cors import CORS
+# from user import bp_user
+# from post import bp_post
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///recap.db'
+app.config['JWT_SECRET_KEY'] = '69a3c8613dc65d62f9f2abc0'
+
 migrate = Migrate(app, db)
 db.init_app(app)
-CORS(app)
+jwt = JWTManager(app)
+# CORS(app)
 api = Api(app)
 
 # app.register_blueprint(bp_user, url_prefix='/users')
@@ -82,6 +86,36 @@ def posts():
     response = [post.to_dict() for post in posts]
     return make_response(response, 200)
 
+class RegisterUser(Resource):
+    def post(self):
+        data = request.get_json()
+        user = User.get_user_by_username(username=data.get('username'))
+
+        if user is not None:
+            return make_response({"error": "Username already exists"}, 400)
+        
+        new_user = User(username=data.get('username'), email=data.get('email'))
+        new_user.set_password(data.get('password'))
+        db.session.add(new_user)
+        db.session.commit()
+
+        return make_response({"message": "User created successfully"}, 201)
+
+api.add_resource(RegisterUser, '/register')
+
+class LoginUser(Resource):
+    def post(self):
+        data = request.get_json()
+        user = User.get_user_by_username(username=data.get('username'))
+
+        if user is None or not user.check_password(data.get('password')):
+            return make_response({"error": "Invalid username or password"}, 401)
+
+        access_token = create_access_token(identity=user.id)
+        return make_response({"access_token": access_token}, 200)
+    
+api.add_resource(LoginUser, '/login')
+
 # Restful API
 class UserResource(Resource):
     # GET method to fetch one or all users
@@ -134,4 +168,4 @@ class UserResource(Resource):
 api.add_resource(UserResource, '/users', '/users/<int:id>')
 
 if __name__ == '__main__':
-    app.run(port=8000, debug=True)
+    app.run(port=8080, debug=True)
