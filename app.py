@@ -81,6 +81,7 @@ def user(id):
 
 
 @app.route('/posts', methods=['GET', 'POST'])
+@jwt_required()
 def posts():
     posts = Post.query.all()
     response = [post.to_dict() for post in posts]
