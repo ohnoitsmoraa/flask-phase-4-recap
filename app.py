@@ -3,17 +3,20 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from models import *
 from flask_restful import Api, Resource
-from requests import get
-from requests import get
-from requests import get
+from flask_cors import CORS
+from user import bp_user
+from post import bp_post
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///recap.db'
 migrate = Migrate(app, db)
 db.init_app(app)
-
+CORS(app)
 api = Api(app)
+
+# app.register_blueprint(bp_user, url_prefix='/users')
+# app.register_blueprint(bp_post, url_prefix='/posts')
 
 @app.route('/')
 def index():
