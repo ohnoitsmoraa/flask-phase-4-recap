@@ -65,3 +65,8 @@ class Group(db.Model, SerializerMixin):
     # relationships
     users = db.relationship('User', secondary=user_groups, back_populates='groups')
 
+class TokenBlockList(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column (db.String(255), nullable=False, index=True)
+    created_at = db.Column (db.DateTime, nullable=False)
+

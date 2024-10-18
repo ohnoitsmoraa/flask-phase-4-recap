@@ -3,10 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from models import *
 from flask_restful import Api, Resource
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt
 # from flask_cors import CORS
-# from user import bp_user
-# from post import bp_post
 
 app = Flask(__name__)
 
@@ -19,74 +17,94 @@ jwt = JWTManager(app)
 # CORS(app)
 api = Api(app)
 
-# app.register_blueprint(bp_user, url_prefix='/users')
-# app.register_blueprint(bp_post, url_prefix='/posts')
+# JWT error handling
+@jwt.expired_token_loader
+def jwt_expired_token(jwt_header, jwt_data):
+    return make_response ({'message' : "Token has expired", "error" : "token_expired"}, 401)
 
-@app.route('/')
-def index():
-    return 'Welcome to Flask!'
+@jwt.invalid_token_loader
+def jwt_invalid_token(error):
+    return make_response({"message" : "Invalid token", "error" : "Invalid token"}, 401)
 
-@app.route('/users', methods=['GET', 'POST'])
-def users():
-    if request.method == 'GET':
-        users = User.query.all()
-        response = [user.to_dict() for user in users] 
-        return make_response(jsonify(response), 200)
+@jwt.unauthorized_loader
+def missing_token(error):
+    return make_response ({"message" : "Missing token", "error":"Missing token"}, 401)
 
-    if request.method == 'POST':
-        data = request.get_json()
-        new_user = User(username=data['username'], email=data['email'])
-        db.session.add(new_user)
-        db.session.commit()
-        return make_response({"message": "Success"}, 201) 
+@jwt.token_in_blocklist_loader
+def token_in_blocklist(jwt_header, jwt_data):
+    jti = jwt_data['jti']
 
-@app.route('/users/<int:id>', methods=['GET', 'PATCH', 'DELETE']) 
-def user(id):
-    if request.method == 'GET':
-        user = User.query.get(id)
+    token = db.session.query(TokenBlockList).filter(TokenBlockList.jti == jti).scalar()
 
-        if not user:
-            return make_response({"error": "User not found"}, 404)
+    return token is not None
+
+# Routes
+# @app.route('/')
+# def index():
+#     return 'Welcome to Flask!'
+
+# @app.route('/users', methods=['GET', 'POST'])
+# def users():
+#     if request.method == 'GET':
+#         users = User.query.all()
+#         response = [user.to_dict() for user in users] 
+#         return make_response(jsonify(response), 200)
+
+#     if request.method == 'POST':
+#         data = request.get_json()
+#         new_user = User(username=data['username'], email=data['email'])
+#         db.session.add(new_user)
+#         db.session.commit()
+#         return make_response({"message": "Success"}, 201) 
+
+# @app.route('/users/<int:id>', methods=['GET', 'PATCH', 'DELETE']) 
+# def user(id):
+#     if request.method == 'GET':
+#         user = User.query.get(id)
+
+#         if not user:
+#             return make_response({"error": "User not found"}, 404)
         
-        return make_response(user.to_dict(), 200)
+#         return make_response(user.to_dict(), 200)
     
-    if request.method == 'DELETE':
-        user = User.query.get(id)
+#     if request.method == 'DELETE':
+#         user = User.query.get(id)
 
-        if not user:
-            return make_response({"error": "User not found"}, 404)
+#         if not user:
+#             return make_response({"error": "User not found"}, 404)
 
-        db.session.delete(user)
-        db.session.commit()
-        return make_response({"message": "Success"}, 200)
+#         db.session.delete(user)
+#         db.session.commit()
+#         return make_response({"message": "Success"}, 200)
     
-    if request.method == 'PATCH':
-        user = User.query.get(id)
-        data = request.get_json()
+#     if request.method == 'PATCH':
+#         user = User.query.get(id)
+#         data = request.get_json()
 
-        if not user:
-            return make_response({"error": "User not found"}, 404)
+#         if not user:
+#             return make_response({"error": "User not found"}, 404)
 
-        user.username = data['username']
-        user.email = data['email']
-        db.session.commit()
-        return make_response(user.to_dict(), 200)
+#         user.username = data['username']
+#         user.email = data['email']
+#         db.session.commit()
+#         return make_response(user.to_dict(), 200)
     
-    data = request.get_json()
-    print(data)
-    for attr in data:
-        setattr(user, attr, data[attr])
-        db.session.commit()
-        return make_response(user.to_dict(), 200)
+#     data = request.get_json()
+#     print(data)
+#     for attr in data:
+#         setattr(user, attr, data[attr])
+#         db.session.commit()
+#         return make_response(user.to_dict(), 200)
 
 
-@app.route('/posts', methods=['GET', 'POST'])
-@jwt_required()
-def posts():
-    posts = Post.query.all()
-    response = [post.to_dict() for post in posts]
-    return make_response(response, 200)
+# @app.route('/posts', methods=['GET', 'POST'])
+# @jwt_required()
+# def posts():
+#     posts = Post.query.all()
+#     response = [post.to_dict() for post in posts]
+#     return make_response(response, 200)
 
+# Restful API
 class RegisterUser(Resource):
     def post(self):
         data = request.get_json()
@@ -117,7 +135,22 @@ class LoginUser(Resource):
     
 api.add_resource(LoginUser, '/login')
 
-# Restful API
+# By doing this we are doing JWT revoking
+class LogoutUser(Resource):
+    @jwt_required()   # With this you cannot log out without accessing / logging in
+    def get(self):
+        jwt = get_jwt()
+        jti = jwt['jti']
+
+        new_block_list = TokenBlockList(jti=jti)
+        db.session.add(new_block_list)
+        db.session.commit()
+
+        return make_response ({"message" : "User logged out successfully"}, 201)
+
+
+api.add_resource(LogoutUser, '/logout')
+
 class UserResource(Resource):
     # GET method to fetch one or all users
     def get(self, id=None):
