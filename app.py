@@ -4,12 +4,16 @@ from flask_migrate import Migrate
 from models import *
 from flask_restful import Api, Resource
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt
+import os
+from dotenv import load_dotenv
 # from flask_cors import CORS
+
+load_dotenv()
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///recap.db'
-app.config['JWT_SECRET_KEY'] = '69a3c8613dc65d62f9f2abc0'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
 
 migrate = Migrate(app, db)
 db.init_app(app)

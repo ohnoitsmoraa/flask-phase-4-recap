@@ -3,6 +3,7 @@ from sqlalchemy.orm import validates
 from sqlalchemy_serializer import SerializerMixin
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -68,5 +69,5 @@ class Group(db.Model, SerializerMixin):
 class TokenBlockList(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column (db.String(255), nullable=False, index=True)
-    created_at = db.Column (db.DateTime, nullable=False)
+    created_at = db.Column (db.DateTime, default=datetime.now(timezone.utc))
 
