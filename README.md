@@ -41,11 +41,13 @@ POST/api/users
     2. In the .env file, display files that you'd like to be put secret e.g.
 
         `SQLALCHEMY_DATABASE_URI='___'`
+        
         `JWT_SECRET_KEY='____'`
 
     3. In the app.py, import the required dotenv files:
 
         `import os`
+
         `from dotenv import load_dotenv`
 
     4. Initialize the dotenv:
@@ -59,5 +61,5 @@ POST/api/users
     6. In the gitignore file, add:
 
         `.env`
-        
+
         - By doing that, nobody will be able to access the environments and secret keys.
